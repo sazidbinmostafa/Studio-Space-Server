@@ -48,6 +48,22 @@ app.post('/add-studio', async (req, res) => {
     }
 })
 
+// Get All Studios \\
+app.get('/studios', async (req, res) => {
+    try {
+        const data = await studiosCollection.find().toArray()
+        res.send(data)
+    }
+    catch (error) {
+        console.log("Failed to fetch", error)
+        res.status(500).json({
+            message: "Failed to fetch studios",
+        });
+    }
+})
+
+
+// -------------------------------------------------\\
 app.get('/', (req, res) => {
     res.send("StudioSpace API is running!");
 })
