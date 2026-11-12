@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from "cors";
 import "dotenv/config";
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import multer from 'multer';
 
 const app = express();
@@ -123,6 +123,29 @@ app.get('/studios', async (req, res) => {
         });
     }
 })
+
+// Get A Studio \\
+app.get("/studios/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const studio = await studiosCollection.findOne({
+      _id: new ObjectId(id),
+    });
+
+    if (!studio) {
+      return res.send({message: "Studio not found"});
+    }
+
+    res.send(studio);
+  } catch (error) {
+    console.error("Error fetching studio:", error);
+
+    res.status(500).json({
+      message: "Failed to fetch studio details",
+    });
+  }
+});
 
 
 // -------------------------------------------------\\
