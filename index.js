@@ -2,6 +2,7 @@ import express from 'express';
 import cors from "cors";
 import "dotenv/config";
 import { MongoClient } from 'mongodb';
+import multer from 'multer';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,6 +24,14 @@ const mongoClient = await ConnectMongoDB();
 const db = mongoClient.db("studio-space");
 const studiosCollection = db.collection("studios");
 
+// Upload Managing with Multer \\
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 32 * 1024 * 1024,
+    },
+});
+
 // Middleware \\
 app.use(express.json());
 
@@ -32,6 +41,59 @@ app.use(
         credentials: true,
     })
 );
+
+// Upload An Image To ImgBB \\
+app.post("/upload-image", upload.single("image"), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                message: "Please select an image.",
+            });
+        }
+
+        if (!req.file.mimetype.startsWith("image/")) {
+            return res.status(400).json({
+                message: "Only image files are allowed.",
+            });
+        }
+
+        const formData = new FormData();
+
+        formData.append(
+            "image",
+            new Blob([new Uint8Array(req.file.buffer)], {
+                type: req.file.mimetype,
+            }),
+            req.file.originalname
+        );
+
+        const response = await fetch(
+            `https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY}`,
+            {
+                method: "POST",
+                body: formData,
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            return res.status(500).json({
+                message: "Image upload failed.",
+            });
+        }
+
+        res.status(200).json({
+            imageUrl: data.data.url,
+        });
+    } catch (error) {
+        console.error("Image upload error:", error);
+
+        res.status(500).json({
+            message: "Something went wrong while uploading the image.",
+        });
+    }
+});
 
 // POST A Studio \\
 app.post('/add-studio', async (req, res) => {
